@@ -61,4 +61,8 @@ The `tests` directory contains a test suite for the `src` package. There's a `ru
 
 ## Authors
 
-Michal Young, Ram Durairajan. Updated by Ali Hassani.
+Carsten Konyn
+
+I used w3schools.com for some stuff like how to manipulate strings in Javascript.
+
+I might of changed the position of stuff like the list of stuff you've already found, but at least it's all there.

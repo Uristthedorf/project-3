@@ -5,6 +5,7 @@ from a scrambled string)
 """
 
 import flask
+from flask import request
 import logging
 
 # Our modules
@@ -79,7 +80,10 @@ def success():
 #   a JSON request handler
 #######################
 
-@app.route("/_check", methods=["POST"])
+
+
+'''
+@app.route("/_check") #No more method=POST
 def check():
     """
     User has submitted the form with a word ('attempt')
@@ -92,7 +96,8 @@ def check():
     app.logger.debug("Entering check")
 
     # The data we need, from form and from cookie
-    text = flask.request.form["attempt"]
+    # text = flask.request.form["attempt"]
+    text = request.args.get("text", type=str)
     jumble = flask.session["jumble"]
     matches = flask.session.get("matches", [])  # Default to empty list
 
@@ -105,23 +110,78 @@ def check():
         # Cool, they found a new word
         matches.append(text)
         flask.session["matches"] = matches
+        case = "1"
     elif text in matches:
-        flask.flash("You already found {}".format(text))
-    elif not matched:
-        flask.flash("{} isn't in the list of words".format(text))
-    elif not in_jumble:
-        flask.flash(
-            '"{}" can\'t be made from the letters {}'.format(text, jumble))
+        #flask.flash("You already found {}".format(text))
+        case = "2"
+    #elif not matched:
+    #    flask.flash("{} isn't in the list of words".format(text))
+    elif (not in_jumble) and (matched):
+        #flask.flash(
+        #    '"{}" can\'t be made from the letters {}'.format(text, jumble))
+        case = '3'
     else:
-        app.logger.debug("This case shouldn't happen!")
-        assert False  # Raises AssertionError
+        case = '4'
+    #    app.logger.debug("This case shouldn't happen!")
+    #    assert False  # Raises AssertionError
+
+
 
     # Choose page:  Solved enough, or keep going?
     if len(matches) >= flask.session["target_count"]:
        return flask.redirect(flask.url_for("success"))
     else:
-       return flask.redirect(flask.url_for("keep_going"))
+       #return flask.redirect(flask.url_for("keep_going"))
+       return flask.jsonify({"case" : case})
+       '''
 
+@app.route("/_check")
+def check():
+    #app.logger.debug("At least one seems to be set correctly")
+    text = request.args.get("text", type=str)
+    jumble = flask.session["jumble"]
+    matches = flask.session.get("matches", [])  # Default to empty list
+    done = False
+
+    # Is it good?
+    in_jumble = LetterBag(jumble).contains(text)
+    matched = WORDS.has(text)
+
+    if matched and in_jumble and not (text in matches):
+        # Cool, they found a new word
+        matches.append(text)
+        flask.session["matches"] = matches
+        #app.logger.debug("Case 1")
+        case = "1"
+        if len(matches) >= flask.session["target_count"]:
+            done = True
+    elif text in matches:
+        #flask.flash("You already found {}".format(text))
+        #app.logger.debug("Case 2")
+        case = "2"
+    #elif not matched:
+    #    flask.flash("{} isn't in the list of words".format(text))
+    elif (not in_jumble) and (matched):
+        #flask.flash(
+        #    '"{}" can\'t be made from the letters {}'.format(text, jumble))
+        #app.logger.debug("Case 3")
+        case = '3'
+    else:
+        case = '4'
+        #app.logger.debug("Case 4")
+
+    #app.logger.debug("List:")
+    #for i in matches:
+    #    app.logger.debug(i)
+
+    #if len(matches) >= flask.session["target_count"]:
+    #    app.logger.debug("That's enough!")
+    #    return flask.redirect(flask.url_for("success"))
+    #else:
+       #return flask.redirect(flask.url_for("keep_going"))
+    #app.logger.debug("Jsonified: " + case)
+    rslt = {"case" : case, "done" : done}
+    return flask.jsonify(result=rslt)
 
 ###############
 # AJAX request handlers
@@ -133,6 +193,8 @@ def example():
     """
     Example ajax request handler
     """
+    #text = request.args.get("text", type=str)
+    #length = len(text)
     app.logger.debug("Got a JSON request")
     rslt = {"key": "value"}
     return flask.jsonify(result=rslt)
@@ -149,6 +211,8 @@ def format_filt(something):
     the Jinja2 code
     """
     return "Not what you asked for"
+
+
 
 ###################
 #   Error handlers
